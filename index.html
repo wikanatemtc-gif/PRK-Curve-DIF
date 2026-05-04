@@ -1342,7 +1342,8 @@ function doSave(isAuto){
   const grp=(getStock()[product]||{}).group||'';
   const effExp=getEffExp();
   const isOut = type==='นำออก'||type==='เคลม'||type==='ขาย'||type==='ฟรี'||type==='แลกเปลี่ยน';
-  const recBy = (window._fbUser && window._fbUser.email) ? window._fbUser.email : 'unknown';
+  const _cu = window._fb && window._fb.auth ? window._fb.auth.currentUser : null;
+  const recBy = _cu ? _cu.email : (window._fbUser ? window._fbUser.email : 'unknown');
   const entry={
     id:Date.now(), datetime:nowStr(), dateISO:today(),
     serial, product, group:grp,
@@ -1729,7 +1730,7 @@ function saveManualLog(){
   const entry={
     id:Date.now(), datetime:nowStr(), dateISO:document.getElementById('ml-date').value,
     docno:ml_docno,
-    recordedBy:(window._fbUser&&window._fbUser.email)?window._fbUser.email:'unknown',
+    recordedBy:(window._fb&&window._fb.auth&&window._fb.auth.currentUser)?window._fb.auth.currentUser.email:(window._fbUser?window._fbUser.email:'unknown'),
     serial, product:prod, group:grp,
     type:document.getElementById('ml-type').value,
     in:parseInt(document.getElementById('ml-in').value)||0,
@@ -2028,7 +2029,7 @@ function saveBatch(){
       datetime: now, dateISO: todayStr,
       serial: ser, product, group: grp,
       type, docno,
-      recordedBy: (window._fbUser && window._fbUser.email) ? window._fbUser.email : 'unknown',
+      recordedBy: (window._fb&&window._fb.auth&&window._fb.auth.currentUser) ? window._fb.auth.currentUser.email : (window._fbUser?window._fbUser.email:'unknown'),
       in: isOut?0:qty, out: isOut?qty:0,
       lot: d.lot, box: d.box, prodCode: d.code,
       mfg: d.mfgS,
