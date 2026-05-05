@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PRK 6SC Stock — DIF</title>
+<title>PRK Curve Stock — DIF</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════
@@ -1306,11 +1306,17 @@ function doSave(isAuto){
   if(!product){if(!isAuto) showFeedback('กรุณาเลือก Product Name','orange');return;}
 
   // ── ตรวจ Serial ซ้ำ ──────────────────────────────────────
-  // ตรวจซ้ำ: รับเข้าซ้ำ หรือ นำออกซ้ำ (ต่าง type ถือว่าปกติ)
+  // ตรวจซ้ำโดยดู net movement ของ serial นั้น
   const _isOutType = type==='นำออก'||type==='เคลม'||type==='ขาย'||type==='ฟรี'||type==='แลกเปลี่ยน';
-  const dupLog = getLog().find(function(l){
-    return l.serial===serial && ((l.out>0)===_isOutType);
-  });
+  const _serialLogs = getLog().filter(function(l){ return l.serial===serial; });
+  const _netIn  = _serialLogs.reduce(function(a,l){return a+(l.in||0);},0);
+  const _netOut = _serialLogs.reduce(function(a,l){return a+(l.out||0);},0);
+  // รับเข้า: บล็อกถ้ายังอยู่ในสต็อก (in > out)
+  // นำออก: บล็อกถ้านำออกไปแล้ว (out >= in และ out > 0)
+  const _inStock = _netIn > _netOut;
+  const _alreadyOut = _netOut > 0 && _netOut >= _netIn;
+  const _shouldBlock = _isOutType ? _alreadyOut : _inStock;
+  const dupLog = _shouldBlock ? _serialLogs[0] : null;
   if(dupLog){
     const dupDate = dupLog.dateISO||'';
     if(isAuto){
@@ -2003,12 +2009,13 @@ function saveBatch(){
   for(let b=s.box; b<=e.box; b++){
     const ser = `${s.yy}${s.mm}${s.dd}${s.code}-${String(b).padStart(4,'0')}`;
     // แจ้งเตือนเฉพาะ: รับเข้าซ้ำ (เคยรับเข้าแล้ว) หรือ นำออกซ้ำ (เคยนำออกแล้ว)
-    var existSame = logs.find(function(l){
-      if(l.serial!==ser) return false;
-      if(_bIsOut) return l.out>0; // นำออก → เช็คว่าเคยนำออกแล้วไหม
-      else return l.in>0;         // รับเข้า → เช็คว่าเคยรับเข้าแล้วไหม
-    });
-    if(existSame) dups.push(ser);
+    var _sLogs = logs.filter(function(l){return l.serial===ser;});
+    var _sIn  = _sLogs.reduce(function(a,l){return a+(l.in||0);},0);
+    var _sOut = _sLogs.reduce(function(a,l){return a+(l.out||0);},0);
+    var _sInStock  = _sIn > _sOut;
+    var _sAlrOut   = _sOut>0 && _sOut>=_sIn;
+    var _sBlock    = _bIsOut ? _sAlrOut : _sInStock;
+    if(_sBlock) dups.push(ser);
   }
   if(dups.length>0){
     const ok = confirm('⚠️ พบ Serial ซ้ำ ' + dups.length + ' กล่อง:\n' + dups.slice(0,5).join('\n') + (dups.length>5?'\n...':'') + '\n\nดำเนินการต่อไหม? (จะบันทึกทับ)');
