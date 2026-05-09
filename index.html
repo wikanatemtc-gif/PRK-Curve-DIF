@@ -382,6 +382,7 @@ onAuthStateChanged(window._fb.auth,user=>{
     <button class="tab" onclick="showPage('scan',this)">🔍 Scan QR</button>
     <button class="tab" onclick="showPage('stock',this)">📦 สต็อก</button>
     <button class="tab" onclick="showPage('log',this)">📋 LOG</button>
+    <button class="tab" onclick="showPage('tracker',this)">🔎 Serial Tracker</button>
     <button class="tab" onclick="showPage('report',this)">📈 รายงาน</button>
     <button class="tab" onclick="showPage('settings',this)">⚙️ ตั้งค่า</button>
   </div>
@@ -688,6 +689,82 @@ onAuthStateChanged(window._fb.auth,user=>{
   </div>
 </div>
 
+
+
+<!-- ═══════════ SERIAL TRACKER ═══════════ -->
+<div id="page-tracker" class="page">
+  <div class="print-header">
+    <h2 style="font-size:18px;margin-bottom:4px">Serial ที่อยู่ในสต็อกปัจจุบัน</h2>
+    <p id="print-tracker-date"></p>
+  </div>
+
+  <!-- Filter -->
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end">
+    <div>
+      <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">กลุ่มสินค้า</label>
+      <select id="trk-group" onchange="onTrkGroupChange()" style="font-size:13px;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);min-width:200px">
+        <option value="">ทุกกลุ่ม</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Product (SKU)</label>
+      <select id="trk-sku" onchange="renderTracker()" style="font-size:13px;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);min-width:180px">
+        <option value="">ทุก SKU</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Lot</label>
+      <select id="trk-lot" onchange="renderTracker()" style="font-size:13px;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);min-width:100px">
+        <option value="">ทุก Lot</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">สถานะ Expiry</label>
+      <select id="trk-expiry" onchange="renderTracker()" style="font-size:13px;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text)">
+        <option value="">ทุกสถานะ</option>
+        <option value="expired">🔴 หมดอายุแล้ว</option>
+        <option value="3m">🟡 หมดใน 3 เดือน</option>
+        <option value="6m">🟠 หมดใน 6 เดือน</option>
+        <option value="ok">🟢 ยังใช้ได้</option>
+        <option value="none">— ไม่มี Expiry</option>
+      </select>
+    </div>
+    <div>
+      <input id="trk-search" placeholder="🔍 ค้นหา Serial..." oninput="renderTracker()"
+        style="font-size:13px;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);min-width:180px">
+    </div>
+    <div class="no-print" style="display:flex;gap:8px;align-self:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportTrackerCSV()">📥 Export CSV</button>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid" id="trk-kpi" style="margin-bottom:16px"></div>
+
+  <!-- Table -->
+  <div class="card" style="padding:0">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Serial No.</th>
+            <th>Product</th>
+            <th>กลุ่มสินค้า</th>
+            <th>Lot</th>
+            <th>วันผลิต</th>
+            <th>Expiry Date</th>
+            <th>วันที่เหลือ</th>
+            <th>สถานะ</th>
+            <th>วันที่รับเข้า</th>
+          </tr>
+        </thead>
+        <tbody id="trk-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════ REPORT ═══════════ -->
 <div id="page-report" class="page">
@@ -1906,7 +1983,10 @@ function showPage(id,btn){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   btn.classList.add('active');
-  if(id==='report'){
+  if(id==='tracker'){
+    initTracker();
+    renderTracker();
+  } else if(id==='report'){
     initReport();
     renderReport();
     setTimeout(()=>{},100);
@@ -2363,5 +2443,185 @@ function doLogin(){
     });
 }
 function doLogout(){if(confirm('ออกจากระบบ?'))window._fb.signOut(window._fb.auth);}
+
+// ══════════════════════════════════════════════
+// SERIAL TRACKER
+// ══════════════════════════════════════════════
+
+function getInStockSerials(){
+  // คำนวณ serial ที่ยังอยู่ในสต็อก: in > out
+  const logs = getLog();
+  const map = {}; // serial → {inQty, outQty, lastEntry}
+
+  logs.forEach(function(l){
+    if(!l.serial) return;
+    if(!map[l.serial]) map[l.serial] = {inQty:0, outQty:0, entry:l};
+    map[l.serial].inQty  += (l.in||0);
+    map[l.serial].outQty += (l.out||0);
+    // เก็บ entry ล่าสุดของ "รับเข้า" ไว้แสดง
+    if((l.in||0) > 0) map[l.serial].entry = l;
+  });
+
+  // กรองเฉพาะที่ยังอยู่ในสต็อก
+  var result = [];
+  Object.keys(map).forEach(function(ser){
+    var m = map[ser];
+    if(m.inQty > m.outQty){
+      result.push({
+        serial:  ser,
+        product: m.entry.product||'',
+        group:   m.entry.group||'',
+        lot:     m.entry.lot||'-',
+        mfg:     m.entry.mfg||'',
+        expiry:  m.entry.expiry||'',
+        dateIn:  m.entry.dateISO||'',
+        inQty:   m.inQty,
+        outQty:  m.outQty,
+        netQty:  m.inQty - m.outQty
+      });
+    }
+  });
+
+  // เรียงตาม Expiry
+  result.sort(function(a,b){
+    if(!a.expiry && !b.expiry) return 0;
+    if(!a.expiry) return 1;
+    if(!b.expiry) return -1;
+    return new Date(a.expiry) - new Date(b.expiry);
+  });
+  return result;
+}
+
+function initTracker(){
+  var stocks = getStock();
+  var groups = [...new Set(Object.values(stocks).map(function(s){return s.group;}).filter(Boolean))].sort();
+  var grpSel = document.getElementById('trk-group');
+  var curGrp = grpSel.value;
+  grpSel.innerHTML = '<option value="">ทุกกลุ่ม</option>' + groups.map(function(g){return '<option value="'+g+'">'+g+'</option>';}).join('');
+  if(curGrp) grpSel.value = curGrp;
+  updateTrkSkuList();
+}
+
+function onTrkGroupChange(){
+  updateTrkSkuList();
+  renderTracker();
+}
+
+function updateTrkSkuList(){
+  var group = document.getElementById('trk-group').value;
+  var stocks = getStock();
+  var prods = Object.keys(stocks).sort();
+  if(group) prods = prods.filter(function(p){return (stocks[p].group||'')===group;});
+  var skuSel = document.getElementById('trk-sku');
+  var curSku = skuSel.value;
+  skuSel.innerHTML = '<option value="">ทุก SKU</option>' + prods.map(function(p){return '<option value="'+p+'">'+p+'</option>';}).join('');
+  if(curSku && prods.includes(curSku)) skuSel.value = curSku;
+}
+
+function renderTracker(){
+  var group  = document.getElementById('trk-group').value;
+  var sku    = document.getElementById('trk-sku').value;
+  var lotFlt = document.getElementById('trk-lot').value;
+  var expFlt = document.getElementById('trk-expiry').value;
+  var q      = (document.getElementById('trk-search').value||'').toLowerCase();
+
+  var items = getInStockSerials().filter(function(item){
+    if(group && item.group!==group) return false;
+    if(sku && item.product!==sku) return false;
+    if(lotFlt && String(item.lot)!==lotFlt) return false;
+    if(expFlt){
+      var st = expSt(item.expiry);
+      if(expFlt==='none' && st!=='none') return false;
+      if(expFlt!=='none' && st!==expFlt) return false;
+    }
+    if(q && !item.serial.toLowerCase().includes(q) && !item.product.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  // อัปเดต Lot dropdown
+  var allLots = [...new Set(getInStockSerials()
+    .filter(function(i){ return (!group||i.group===group)&&(!sku||i.product===sku); })
+    .map(function(i){return String(i.lot);})
+    .filter(Boolean)
+  )].sort(function(a,b){return parseInt(a)-parseInt(b);});
+  var lotSel = document.getElementById('trk-lot');
+  var curLot = lotSel.value;
+  lotSel.innerHTML = '<option value="">ทุก Lot</option>' + allLots.map(function(l){return '<option value="'+l+'">Lot '+l+'</option>';}).join('');
+  if(curLot) lotSel.value = curLot;
+
+  // KPI
+  var expired = items.filter(function(i){return expSt(i.expiry)==='expired';}).length;
+  var warn3m  = items.filter(function(i){return expSt(i.expiry)==='3m';}).length;
+  var ok      = items.filter(function(i){return expSt(i.expiry)==='ok';}).length;
+  var noExp   = items.filter(function(i){return !i.expiry;}).length;
+
+  document.getElementById('trk-kpi').innerHTML = `
+    <div class="kpi" style="--kpi-color:var(--accent)">
+      <div class="kpi-label">Serial ในสต็อก</div>
+      <div class="kpi-value">${items.length.toLocaleString()}</div>
+      <div class="kpi-sub">กล่อง</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--red)">
+      <div class="kpi-label">🔴 หมดอายุแล้ว</div>
+      <div class="kpi-value" style="color:var(--red2)">${expired}</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--orange)">
+      <div class="kpi-label">🟡 หมดใน 3 เดือน</div>
+      <div class="kpi-value" style="color:var(--orange2)">${warn3m}</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--green)">
+      <div class="kpi-label">🟢 ยังใช้ได้</div>
+      <div class="kpi-value" style="color:var(--green2)">${ok}</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--gray)">
+      <div class="kpi-label">— ไม่มี Expiry</div>
+      <div class="kpi-value" style="color:var(--text2)">${noExp}</div>
+    </div>
+  `;
+
+  // Table
+  if(items.length===0){
+    document.getElementById('trk-body').innerHTML =
+      '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">ไม่พบ Serial ในสต็อก</td></tr>';
+    return;
+  }
+
+  document.getElementById('trk-body').innerHTML = items.map(function(item,i){
+    var days = daysUntil(item.expiry);
+    var daysTxt = days===null ? '-' : (days<0 ? days+'d (เกิน)' : days+'d');
+    var daysColor = !days&&days!==0 ? 'var(--text3)' : days<0 ? 'var(--red2)' : days<=90 ? 'var(--orange2)' : 'var(--text)';
+    return '<tr>'+
+      '<td style="color:var(--text3);font-size:11px">'+(i+1)+'</td>'+
+      '<td style="font-family:var(--mono);font-weight:600">'+item.serial+'</td>'+
+      '<td style="font-weight:600">'+item.product+'</td>'+
+      '<td><span class="badge b-blue" style="font-size:10px">'+item.group+'</span></td>'+
+      '<td style="font-family:var(--mono);color:var(--purple2);font-weight:700">'+item.lot+'</td>'+
+      '<td style="font-size:12px">'+fmtDate(item.mfg)+'</td>'+
+      '<td style="font-family:var(--mono);font-weight:700;color:var(--purple2)">'+fmtDate(item.expiry)+'</td>'+
+      '<td style="font-family:var(--mono);font-weight:700;color:'+daysColor+'">'+daysTxt+'</td>'+
+      '<td>'+expBadge(item.expiry)+'</td>'+
+      '<td style="font-size:12px;color:var(--text2)">'+fmtDate(item.dateIn)+'</td>'+
+    '</tr>';
+  }).join('');
+
+  // print date
+  var pd = document.getElementById('print-tracker-date');
+  if(pd) pd.textContent = new Date().toLocaleString('th-TH',{dateStyle:'full',timeStyle:'short'});
+}
+
+function exportTrackerCSV(){
+  var items = getInStockSerials();
+  if(!items.length){alert('ไม่มีข้อมูล');return;}
+  var hdrs = ['serial','product','group','lot','mfg','expiry','dateIn'];
+  var rows = items.map(function(item){
+    return hdrs.map(function(h){return '"'+(item[h]||'').toString().replace(/"/g,'""')+'"';}).join(',');
+  });
+  var csv = '\uFEFF'+hdrs.join(',')+'\n'+rows.join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download = 'SerialInStock_'+today()+'.csv';
+  a.click();
+}
+
 </script></body>
 </html>
