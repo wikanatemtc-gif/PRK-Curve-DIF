@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PRK Curve Stock — DIF</title>
+<title>PRK Curve Stock — MTC</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════
@@ -1320,18 +1320,9 @@ function doSave(isAuto){
   if(dupLog){
     const dupDate = dupLog.dateISO||'';
     if(isAuto){
-      // Auto-save: หยุดบันทึกทันที + flash แดง + แจ้ง
-      const field = document.getElementById('scan-serial');
-      field.style.borderColor='var(--red)';
-      field.style.background='rgba(239,68,68,.08)';
-      setTimeout(()=>{field.style.borderColor='';field.style.background='';},1500);
-      showFeedback('🔴 Serial ซ้ำ! เคยบันทึกแล้วเมื่อ ' + dupDate + ' (' + (dupLog.type||'') + ') — ข้ามกล่องนี้','red');
-      // ล้าง field พร้อม scan ต่อ
-      document.getElementById('scan-serial').value='';
-      document.getElementById('decode-box').style.display='none';
-      parsed=null;
-      setTimeout(()=>document.getElementById('scan-serial').focus(),100);
-      return;
+      // Auto-save: แจ้งเตือนสีส้มแต่บันทึกต่อได้ (อาจ cache ยังไม่ sync)
+      showFeedback('⚠️ Serial นี้อาจเคยบันทึกแล้ว (' + dupDate + ') — บันทึกซ้ำอัตโนมัติ','orange');
+      // ไม่ return — บันทึกต่อ
     } else {
       const confirmed = confirm(
         '⚠️ Serial นี้เคยบันทึกแล้ว!\n\n' +
