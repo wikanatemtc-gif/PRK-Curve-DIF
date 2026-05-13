@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PRK Stock — DIF</title>
+<title>PRK Curve Stock — MTC</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════
@@ -1383,23 +1383,34 @@ function doSave(isAuto){
   if(!product){if(!isAuto) showFeedback('กรุณาเลือก Product Name','orange');return;}
 
   // ── ตรวจ Serial ซ้ำ ──────────────────────────────────────
-  // ตรวจซ้ำโดยดู net movement ของ serial นั้น
+  // ── ตรวจ Serial ──────────────────────────────────────────────────────
   const _isOutType = type==='นำออก'||type==='เคลม'||type==='ขาย'||type==='ฟรี'||type==='แลกเปลี่ยน';
   const _serialLogs = getLog().filter(function(l){ return l.serial===serial; });
   const _netIn  = _serialLogs.reduce(function(a,l){return a+(l.in||0);},0);
   const _netOut = _serialLogs.reduce(function(a,l){return a+(l.out||0);},0);
-  // รับเข้า: บล็อกถ้ายังอยู่ในสต็อก (in > out)
-  // นำออก: บล็อกถ้านำออกไปแล้ว (out >= in และ out > 0)
-  const _inStock = _netIn > _netOut;
-  const _alreadyOut = _netOut > 0 && _netOut >= _netIn;
-  const _shouldBlock = _isOutType ? _alreadyOut : _inStock;
-  const dupLog = _shouldBlock ? _serialLogs[0] : null;
+  const _inStock   = _netIn > _netOut;   // ยังอยู่ในสต็อก
+  const _neverIn   = _netIn === 0;       // ไม่เคยรับเข้าเลย
+  const _alrOut    = _netOut >= _netIn && _netOut > 0; // นำออกหมดแล้ว
+  // บล็อก: รับเข้าซ้ำ (ยังอยู่ในสต็อก) หรือ นำออกซ้ำ/นำออกโดยไม่เคยรับเข้า
+  const _shouldBlock = _isOutType ? (_alrOut || _neverIn) : _inStock;
+  const dupLog = _shouldBlock ? (_serialLogs[0]||{serial,dateISO:'ไม่มีประวัติ',type:'-'}) : null;
   if(dupLog){
     const dupDate = dupLog.dateISO||'';
     if(isAuto){
-      // Auto-save: แจ้งเตือนสีส้มแต่บันทึกต่อได้ (อาจ cache ยังไม่ sync)
-      showFeedback('⚠️ Serial นี้อาจเคยบันทึกแล้ว (' + dupDate + ') — บันทึกซ้ำอัตโนมัติ','orange');
-      // ไม่ return — บันทึกต่อ
+      // Auto-save: บล็อกและแจ้งเตือน flash แดง
+      const _f = document.getElementById('scan-serial');
+      _f.style.borderColor='var(--red)';
+      _f.style.background='rgba(239,68,68,.1)';
+      setTimeout(function(){_f.style.borderColor='';_f.style.background='';},1500);
+      var _autoMsg = _isOutType
+        ? (_neverIn ? '🔴 Serial นี้ไม่เคยรับเข้า — นำออกไม่ได้' : '🔴 Serial ซ้ำ! นำออกไปแล้ว')
+        : '🔴 Serial ซ้ำ! ยังอยู่ในสต็อก (' + dupDate + ')';
+      showFeedback(_autoMsg, 'red');
+      document.getElementById('scan-serial').value='';
+      document.getElementById('decode-box').style.display='none';
+      parsed=null;
+      setTimeout(function(){document.getElementById('scan-serial').focus();},100);
+      return;
     } else {
       const confirmed = confirm(
         '⚠️ Serial นี้เคยบันทึกแล้ว!\n\n' +
@@ -2081,11 +2092,12 @@ function saveBatch(){
     const ser = `${s.yy}${s.mm}${s.dd}${s.code}-${String(b).padStart(4,'0')}`;
     // แจ้งเตือนเฉพาะ: รับเข้าซ้ำ (เคยรับเข้าแล้ว) หรือ นำออกซ้ำ (เคยนำออกแล้ว)
     var _sLogs = logs.filter(function(l){return l.serial===ser;});
-    var _sIn  = _sLogs.reduce(function(a,l){return a+(l.in||0);},0);
-    var _sOut = _sLogs.reduce(function(a,l){return a+(l.out||0);},0);
-    var _sInStock  = _sIn > _sOut;
-    var _sAlrOut   = _sOut>0 && _sOut>=_sIn;
-    var _sBlock    = _bIsOut ? _sAlrOut : _sInStock;
+    var _sIn   = _sLogs.reduce(function(a,l){return a+(l.in||0);},0);
+    var _sOut  = _sLogs.reduce(function(a,l){return a+(l.out||0);},0);
+    var _sInStock = _sIn > _sOut;
+    var _sNeverIn = _sIn === 0;
+    var _sAlrOut  = _sOut>0 && _sOut>=_sIn;
+    var _sBlock   = _bIsOut ? (_sAlrOut||_sNeverIn) : _sInStock;
     if(_sBlock) dups.push(ser);
   }
   if(dups.length>0){
@@ -2381,8 +2393,19 @@ window.ss=function(k,v){
   _C[k]=v;
   if(window._fb)window._fb.set(window._fb.ref(window._fb.db,k),v).catch(function(){});
 };
-window.getStock=function(){return _C[window._fb.SK]||{};};
-window.getLog=function(){return _C[window._fb.LK]||[];};
+window.getStock=function(){
+  var raw = _C[window._fb ? window._fb.SK : 'prk_mtc_stock'];
+  if(!raw) return {};
+  if(typeof raw === 'object' && !Array.isArray(raw)) return raw;
+  return {};
+};
+window.getLog=function(){
+  var raw = _C[window._fb ? window._fb.LK : 'prk_mtc_log'];
+  if(!raw) return [];
+  if(Array.isArray(raw)) return raw.filter(Boolean);
+  // Firebase อาจคืน Object แทน Array — แปลงกลับ
+  return Object.values(raw).filter(Boolean);
+};
 
 window._startApp=function(){
   var SK=window._fb.SK, LK=window._fb.LK;
@@ -2392,7 +2415,10 @@ window._startApp=function(){
   ]).then(function(res){
     // โหลดจาก Firebase
     if(res[0].exists()) _C[SK]=res[0].val();
-    if(res[1].exists()) _C[LK]=res[1].val();
+    if(res[1].exists()){
+      var _lv = res[1].val();
+      _C[LK] = Array.isArray(_lv) ? _lv.filter(Boolean) : Object.values(_lv||{}).filter(Boolean);
+    }
 
     // First run เท่านั้น — ถ้ายังไม่มีข้อมูลใน Firebase
     if(!res[0].exists()){
@@ -2421,7 +2447,11 @@ window._startApp=function(){
       try{renderAll();}catch(e){}
     });
     window._fb.onValue(window._fb.ref(window._fb.db,LK),function(snap){
-      if(snap.exists())_C[LK]=snap.val();
+      if(snap.exists()){
+        var v = snap.val();
+        // แปลง Object → Array ถ้าจำเป็น
+        _C[LK] = Array.isArray(v) ? v.filter(Boolean) : Object.values(v||{}).filter(Boolean);
+      }
       try{renderAll();}catch(e){}
     });
   }).catch(function(e){console.error('Firebase:',e);});
