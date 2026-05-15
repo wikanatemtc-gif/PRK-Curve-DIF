@@ -1619,7 +1619,8 @@ function renderTodayScan(){
       <td style="font-family:var(--mono);color:var(--purple2)">${l.lot||'-'}</td>
       <td>${expBadge(l.expiry)}</td>
       <td style="font-weight:700;font-family:var(--mono);color:${l.in>0?'var(--green2)':'var(--red2)'}">${l.in>0?'+'+l.in:(l.out>0?'-'+l.out:'0')}</td>
-    </tr>`).join('');
+    </tr>`;
+    }).join('');
 }
 
 // ═══════════════════════════════════════════════════
@@ -1779,7 +1780,8 @@ function renderLog(){
       <td style="font-size:11px;color:var(--text2)">${l.recordedBy||'-'}</td>
       <td style="font-size:11px;color:var(--text2)">${l.note||''}</td>
       <td class="no-print"></td>
-    </tr>`).join('');
+    </tr>`;
+    }).join('');
 }
 
 function delLog(id){
