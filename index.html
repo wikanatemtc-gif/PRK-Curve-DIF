@@ -41,15 +41,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
    NAVIGATION
 ═══════════════════════════════════════════════════ */
 .nav{
-  background:linear-gradient(135deg,#0D2759 0%,#1E5BAF 100%);
-  border-bottom:1px solid rgba(255,255,255,.1);box-shadow:0 2px 12px rgba(13,39,89,.25);
+  background:linear-gradient(135deg,#FFFFFF 0%,#DBEAFE 100%);
+  border-bottom:2px solid #1E5BAF;box-shadow:0 2px 12px rgba(30,91,175,.08);
   display:flex;align-items:center;
   padding:0 24px;height:56px;
   position:sticky;top:0;z-index:100;
   gap:0;
 }
 .nav-logo{
-  font-size:15px;font-weight:700;color:#FFFFFF;
+  font-size:15px;font-weight:700;color:#0D2759;
   margin-right:32px;white-space:nowrap;
   display:flex;align-items:center;gap:10px;
 }
@@ -67,8 +67,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   border-bottom:2px solid transparent;
   white-space:nowrap;transition:all .15s;
 }
-.tab:hover{opacity:1;color:#FFFFFF;background:var(--surface2)}
-.tab.active{opacity:1;color:#FFFFFF;border-bottom:3px solid #FCD34D;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+.tab:hover{color:#1E5BAF;background:var(--surface2)}
+.tab.active{color:#0D2759;font-weight:700;border-bottom:3px solid #1E5BAF}
 .nav-right{display:flex;align-items:center;gap:12px;margin-left:auto}
 .nav-clock{font-family:var(--mono);font-size:12px;color:var(--text3)}
 
@@ -386,7 +386,7 @@ onAuthStateChanged(window._fb.auth,user=>{
     <button class="tab" onclick="showPage('report',this)">📈 รายงาน</button>
     <button class="tab" onclick="showPage('settings',this)">⚙️ ตั้งค่า</button>
   </div>
-  <div style="font-size:11px;font-weight:800;color:#FFFFFF;background:#DC2626;padding:4px 12px;border-radius:20px;border:1px solid #FCA5A5;box-shadow:0 2px 6px rgba(220,38,38,.3);letter-spacing:.05em">DIF</div><div class="nav-right no-print"><span id="nav-user" style="color:#FFFFFF;font-weight:600;font-size:13px"></span><button class="btn btn-ghost btn-sm" onclick="doLogout()">ออกจากระบบ</button>
+  <div style="font-size:11px;font-weight:800;color:#FFFFFF;background:#DC2626;padding:4px 12px;border-radius:20px;border:1px solid #FCA5A5;box-shadow:0 2px 6px rgba(220,38,38,.3);letter-spacing:.05em">DIF</div><div class="nav-right no-print"><span id="nav-user" style="color:#1E293B;font-weight:600;font-size:13px"></span><button class="btn btn-ghost btn-sm" onclick="doLogout()">ออกจากระบบ</button>
     <div class="nav-clock" id="nav-clock"></div>
     <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ Print</button>
   </div>
