@@ -648,7 +648,7 @@ onAuthStateChanged(window._fb.auth,user=>{
 
   <div class="flex-between" style="margin-bottom:16px;flex-wrap:wrap;gap:8px">
     <div class="flex" style="flex-wrap:wrap;gap:8px">
-      <select id="log-type" onchange="renderLog()" style="font-size:12px;width:150px">
+      <select id="log-type" onchange="_logPage=1;renderLog()" style="font-size:12px;width:150px">
         <option value="">ทุกประเภท</option>
         <option value="รับเข้า">รับเข้า</option>
         <option value="นำออก">นำออก</option>
@@ -659,10 +659,10 @@ onAuthStateChanged(window._fb.auth,user=>{
         <option value="แลกเปลี่ยน">แลกเปลี่ยน</option>
         <option value="ปรับยอด">ปรับยอด</option>
       </select>
-      <select id="log-grp" onchange="renderLog()" style="font-size:12px;width:200px">
+      <select id="log-grp" onchange="_logPage=1;renderLog()" style="font-size:12px;width:200px">
         <option value="">ทุกกลุ่ม</option>
       </select>
-      <input id="log-search" placeholder="🔍 ค้นหา Serial / Product..." oninput="renderLog()" style="font-size:12px;width:220px">
+      <input id="log-search" placeholder="🔍 ค้นหา Serial / Product..." oninput="_logPage=1;renderLog()" style="font-size:12px;width:220px">
       <span id="log-count" class="text-sm" style="align-self:center"></span>
     </div>
     <div class="flex no-print">
@@ -686,6 +686,7 @@ onAuthStateChanged(window._fb.auth,user=>{
         <tbody id="log-body"></tbody>
       </table>
     </div>
+    <div id="log-pagination"></div>
   </div>
 </div>
 
@@ -1710,21 +1711,61 @@ function renderStock(){
 // ═══════════════════════════════════════════════════
 // RENDER LOG
 // ═══════════════════════════════════════════════════
+var _logPage = 1;
+function logPageGo(p){
+  var totalPages=Math.ceil(_logFiltered.length/_logPerPage)||1;
+  _logPage=Math.max(1,Math.min(p,totalPages));
+  renderLog();
+  // scroll กลับไปบนสุดของตาราง
+  var el=document.getElementById('log-body');
+  if(el) el.parentElement.scrollTop=0;
+}
+var _logPerPage = 50;
+var _logFiltered = [];
+
 function renderLog(){
   const ft=document.getElementById('log-type').value;
   const fg=document.getElementById('log-grp').value;
   const q=(document.getElementById('log-search').value||'').toLowerCase();
-  let logs=getLog().filter(l=>{
+  _logFiltered=getLog().filter(l=>{
     if(ft&&l.type!==ft) return false;
     if(fg&&l.group!==fg) return false;
     if(q&&!(l.product||'').toLowerCase().includes(q)&&!(l.serial||'').toLowerCase().includes(q)) return false;
     return true;
   });
-  document.getElementById('log-count').textContent=logs.length.toLocaleString()+' รายการ';
-  document.getElementById('log-body').innerHTML=logs.length===0
-    ?`<tr><td colspan="14" style="text-align:center;color:var(--text3);padding:24px">ไม่พบรายการ</td></tr>`
-    :logs.map((l,i)=>`<tr class="${l.type==='รับเข้า'||l.type==='รับคืน'?'tr-in':l.type==='นำออก'||l.type==='เคลม'||l.type==='ขาย'?'tr-out':''}">
-      <td style="color:var(--text3);font-size:11px">${logs.length-i}</td>
+  var logs=_logFiltered;
+  var total=logs.length;
+  var totalPages=Math.ceil(total/_logPerPage)||1;
+  if(_logPage>totalPages) _logPage=totalPages;
+  var start=(_logPage-1)*_logPerPage;
+  var end=Math.min(start+_logPerPage, total);
+  var pageLogs=logs.slice(start, end);
+
+  document.getElementById('log-count').textContent=total.toLocaleString()+' รายการ';
+
+  // Pagination controls
+  var pgEl=document.getElementById('log-pagination');
+  if(pgEl){
+    if(total<=_logPerPage){
+      pgEl.innerHTML='';
+    } else {
+      var pgHtml='<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;flex-wrap:wrap">';
+      pgHtml+='<button class="btn btn-ghost btn-sm" onclick="logPageGo(1)" '+((_logPage<=1)?'disabled':'')+'>&laquo;</button>';
+      pgHtml+='<button class="btn btn-ghost btn-sm" onclick="logPageGo('+(_logPage-1)+')" '+((_logPage<=1)?'disabled':'')+'>&lsaquo; ก่อนหน้า</button>';
+      pgHtml+='<span style="font-size:13px;color:var(--text2);padding:0 8px">หน้า <b>'+_logPage+'</b> / '+totalPages+' ('+total.toLocaleString()+' รายการ)</span>';
+      pgHtml+='<button class="btn btn-ghost btn-sm" onclick="logPageGo('+(_logPage+1)+')" '+((_logPage>=totalPages)?'disabled':'')+'>&rsaquo; ถัดไป</button>';
+      pgHtml+='<button class="btn btn-ghost btn-sm" onclick="logPageGo('+totalPages+')" '+((_logPage>=totalPages)?'disabled':'')+'>&raquo;</button>';
+      pgHtml+='</div>';
+      pgEl.innerHTML=pgHtml;
+    }
+  }
+
+  document.getElementById('log-body').innerHTML=pageLogs.length===0
+    ?'<tr><td colspan="14" style="text-align:center;color:var(--text3);padding:24px">ไม่พบรายการ</td></tr>'
+    :pageLogs.map(function(l,i){
+      var rowNum=total-start-i;
+      return '<tr class="${l.type==='รับเข้า'||l.type==='รับคืน'?'tr-in':l.type==='นำออก'||l.type==='เคลม'||l.type==='ขาย'?'tr-out':''}">
+      <td style="color:var(--text3);font-size:11px">${rowNum}</td>
       <td style="font-size:11px;color:var(--text2);white-space:nowrap">${l.datetime}</td>
       <td style="font-size:11px;color:var(--accent2);font-family:var(--mono)">${l.docno||'-'}</td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--text2)">${l.serial||'-'}</td>
