@@ -1611,15 +1611,20 @@ function renderTodayScan(){
   const todayRecs=getLog().filter(l=>l.dateISO===today());
   document.getElementById('today-count').textContent=todayRecs.length+' รายการ';
   document.getElementById('today-body').innerHTML=todayRecs.length===0
-    ?`<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:30px">ยังไม่มีรายการวันนี้</td></tr>`
-    :todayRecs.map(l=>`<tr class="${(l.type==='รับเข้า'||l.type==='รับคืน')?'tr-in':(l.type==='นำออก'||l.type==='เคลม'||l.type==='ขาย'||l.type==='ฟรี'||l.type==='แลกเปลี่ยน')?'tr-out':''}">
-      <td style="font-family:var(--mono);font-size:11px;color:var(--text2)">${l.serial||'-'}</td>
-      <td style="font-weight:600;font-size:12px">${l.product}</td>
-      <td>${(l.type==='รับเข้า'||l.type==='รับคืน')?'<span class="badge b-green">'+l.type+'</span>':'<span class="badge b-red">'+l.type+'</span>'}</td>
-      <td style="font-family:var(--mono);color:var(--purple2)">${l.lot||'-'}</td>
-      <td>${expBadge(l.expiry)}</td>
-      <td style="font-weight:700;font-family:var(--mono);color:${l.in>0?'var(--green2)':'var(--red2)'}">${l.in>0?'+'+l.in:(l.out>0?'-'+l.out:'0')}</td>
-    </tr>`;
+    ?'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:30px">ยังไม่มีรายการวันนี้</td></tr>'
+    :todayRecs.map(function(l){
+      var trClass=(l.type==='รับเข้า'||l.type==='รับคืน')?'tr-in':(l.type==='นำออก'||l.type==='เคลม'||l.type==='ขาย'||l.type==='ฟรี'||l.type==='แลกเปลี่ยน')?'tr-out':'';
+      var typeBadge=(l.type==='รับเข้า'||l.type==='รับคืน')?'<span class="badge b-green">'+l.type+'</span>':(l.type==='นำออก'||l.type==='เคลม'||l.type==='ขาย'||l.type==='ฟรี'||l.type==='แลกเปลี่ยน')?'<span class="badge b-red">'+l.type+'</span>':'<span class="badge b-gray">'+l.type+'</span>';
+      var qtyColor=l.in>0?'var(--green2)':'var(--red2)';
+      var qtyText=l.in>0?'+'+l.in:(l.out>0?'-'+l.out:'0');
+      return '<tr class="'+trClass+'">'
+        +'<td style="font-family:var(--mono);font-size:11px;color:var(--text2)">'+(l.serial||'-')+'</td>'
+        +'<td style="font-weight:600;font-size:12px">'+l.product+'</td>'
+        +'<td>'+typeBadge+'</td>'
+        +'<td style="font-family:var(--mono);color:var(--purple2)">'+(l.lot||'-')+'</td>'
+        +'<td>'+expBadge(l.expiry)+'</td>'
+        +'<td style="font-weight:700;font-family:var(--mono);color:'+qtyColor+'">'+qtyText+'</td>'
+        +'</tr>';
     }).join('');
 }
 
