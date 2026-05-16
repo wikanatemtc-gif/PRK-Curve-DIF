@@ -372,38 +372,97 @@ body.role-viewer .btn-ghost.no-print[onclick*="window.print"]{opacity:1;pointer-
   body{font-size:13px}
   .container,main,#app-root{padding:8px!important}
 
-  /* Nav — เรียงแนวตั้ง */
+  /* ── NAV ใหม่: 2 rows ชัดเจน ──
+     Row 1: Logo + DIF + Spacer + Role + Logout
+     Row 2: Tabs (scroll horizontal)
+  */
   .nav{
     flex-wrap:wrap!important;
-    padding:8px 10px!important;
+    padding:8px 12px!important;
+    gap:8px!important;
+    height:auto!important;
+    min-height:auto!important;
+    align-items:center!important;
+  }
+
+  /* Logo เล็กลง + อยู่ซ้ายสุด */
+  .nav-logo{
+    order:1!important;
+    flex-shrink:0!important;
+    margin-right:0!important;
     gap:6px!important;
   }
-  .nav-logo{order:1;flex-shrink:0}
-  .nav-logo img{height:32px!important;padding:3px 6px!important}
-  .nav-right{order:2;flex:1;justify-content:flex-end;gap:6px!important;flex-wrap:wrap}
+  .nav-logo img{height:30px!important;padding:2px 6px!important;border-radius:6px!important}
+
+  /* DIF badge — อยู่ติดกับ logo (order 2) */
+  .nav .dif-badge{
+    order:2!important;
+    font-size:10px!important;
+    padding:3px 8px!important;
+    flex-shrink:0!important;
+  }
+
+  /* nav-right — เรียงขวาสุด ในแถวเดียวกับ logo */
+  .nav-right{
+    order:3!important;
+    margin-left:auto!important;
+    flex:0 0 auto!important;
+    justify-content:flex-end!important;
+    gap:6px!important;
+    flex-wrap:nowrap!important;
+    align-items:center!important;
+  }
+
+  /* ซ่อน items ที่ไม่จำเป็นบนมือถือ */
+  .nav-clock{display:none!important}
+  .nav-right .btn[onclick*="print"]{display:none!important}  /* Print button ใน nav — ซ่อน */
+  #nav-user{display:none!important}  /* email — ซ่อน (มีอยู่ใน Settings) */
+
+  /* Role badge — เล็กแต่อ่านได้ */
+  #nav-role-badge{
+    font-size:10px!important;
+    padding:3px 8px!important;
+    font-weight:700!important;
+  }
+
+  /* Logout button — เล็กลง */
+  .nav-right .btn{
+    padding:6px 10px!important;
+    font-size:11px!important;
+    min-height:32px!important;
+  }
+
+  /* Tabs — แถวที่ 2 เต็มความกว้าง */
   .nav-tabs{
-    order:3;
-    width:100%;
+    order:4!important;
+    width:100%!important;
     overflow-x:auto;
     overflow-y:hidden;
     flex-wrap:nowrap!important;
     -webkit-overflow-scrolling:touch;
     scrollbar-width:none;
-    background:rgba(255,255,255,.4);
+    background:rgba(255,255,255,.6);
     border-radius:10px;
-    padding:4px;
+    padding:3px;
     gap:2px!important;
+    height:auto!important;
+    border:1px solid rgba(30,91,175,.1);
   }
   .nav-tabs::-webkit-scrollbar{display:none}
   .tab{
     font-size:12px!important;
-    padding:8px 10px!important;
+    padding:8px 11px!important;
+    height:auto!important;
     white-space:nowrap;
     flex-shrink:0;
+    border-bottom:none!important;
+    border-radius:6px!important;
   }
-  .nav-clock{display:none}
-  #nav-user{font-size:11px!important;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #nav-role-badge{font-size:9px!important;padding:2px 6px!important}
+  .tab.active{
+    background:#1E5BAF!important;
+    color:#fff!important;
+    border:none!important;
+  }
 
   /* Cards & layout */
   .card{padding:14px!important;border-radius:12px!important}
@@ -520,11 +579,16 @@ body.role-viewer .btn-ghost.no-print[onclick*="window.print"]{opacity:1;pointer-
 
 /* Very small screens (< 480px) */
 @media (max-width: 480px){
+  .nav{padding:6px 10px!important;gap:6px!important}
+  .nav-logo img{height:26px!important;padding:2px 5px!important}
+  .nav .dif-badge{font-size:9px!important;padding:2px 7px!important}
+  #nav-role-badge{font-size:9px!important;padding:2px 6px!important}
+  .nav-right .btn{padding:5px 9px!important;font-size:10px!important;min-height:28px!important}
   .kpi-grid{grid-template-columns:1fr 1fr!important}
   .kpi-value{font-size:20px!important}
   #group-summary > div{grid-template-columns:1fr!important}
   .nav-tabs{padding:3px!important}
-  .tab{font-size:11px!important;padding:7px 8px!important}
+  .tab{font-size:11px!important;padding:7px 9px!important}
 }
 
 /* Touch optimization */
@@ -559,6 +623,33 @@ body.role-viewer .btn-ghost.no-print[onclick*="window.print"]{opacity:1;pointer-
   transition:all .2s;
 }
 #pwa-install-btn:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(30,91,175,.4)}
+
+/* ═══════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+═══════════════════════════════════════════════════ */
+.toast-container{
+  position:fixed;top:20px;right:20px;
+  z-index:10000;display:flex;flex-direction:column;gap:8px;
+  pointer-events:none;
+}
+.toast{
+  background:#FFFFFF;color:#0F172A;
+  padding:12px 18px;border-radius:10px;
+  font-size:13px;font-weight:600;
+  min-width:240px;max-width:380px;
+  box-shadow:0 8px 24px rgba(0,0,0,.15);
+  border-left:4px solid #1E5BAF;
+  pointer-events:auto;
+  animation:toastIn .25s ease-out;
+  display:flex;align-items:center;gap:10px;
+}
+.toast-success{border-left-color:#10B981;background:#F0FDF4;color:#065F46}
+.toast-error  {border-left-color:#DC2626;background:#FEF2F2;color:#991B1B}
+.toast-warn   {border-left-color:#F59E0B;background:#FFFBEB;color:#92400E}
+.toast-info   {border-left-color:#3B82F6;background:#EFF6FF;color:#1E40AF}
+.toast.removing{animation:toastOut .25s ease-out forwards}
+@keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}
 
 </style>
 <script type="module">
@@ -661,7 +752,7 @@ function installPWA(){
     <button class="tab" onclick="showPage('report',this)">📈 รายงาน</button>
     <button class="tab" onclick="showPage('settings',this)">⚙️ ตั้งค่า</button>
   </div>
-  <div style="font-size:11px;font-weight:800;color:#FFFFFF;background:#DC2626;padding:4px 12px;border-radius:20px;border:1px solid #FCA5A5;box-shadow:0 2px 6px rgba(220,38,38,.3);letter-spacing:.05em">DIF</div><div class="nav-right no-print"><span id="nav-user" style="color:#1E293B;font-weight:600;font-size:13px"></span><span id="nav-role-badge" class="role-badge role-viewer">👁 VIEWER</span><button class="btn btn-ghost btn-sm" onclick="doLogout()">ออกจากระบบ</button>
+  <div class="dif-badge" style="font-size:11px;font-weight:800;color:#FFFFFF;background:#DC2626;padding:4px 12px;border-radius:20px;border:1px solid #FCA5A5;box-shadow:0 2px 6px rgba(220,38,38,.3);letter-spacing:.05em">DIF</div><div class="nav-right no-print"><span id="nav-user" style="color:#1E293B;font-weight:600;font-size:13px"></span><span id="nav-role-badge" class="role-badge role-viewer">👁 VIEWER</span><button class="btn btn-ghost btn-sm" onclick="doLogout()">ออกจากระบบ</button>
     <div class="nav-clock" id="nav-clock"></div>
     <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ Print</button>
   </div>
@@ -1187,6 +1278,43 @@ function installPWA(){
           💡 ข้อมูลเก็บใน Browser LocalStorage — Backup ไว้ที่ไดร์เพื่อความปลอดภัย
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ AUTO BACKUP PANEL (Admin only) ═══════════ -->
+<div id="backup-section" class="hide-staff hide-viewer" style="margin-top:20px">
+  <div class="card" style="border:2px solid #C7D2FE">
+    <div class="card-title">
+      <span class="dot" style="background:#4F46E5"></span>
+      🤖 Backup อัตโนมัติ (รายสัปดาห์)
+      <span style="margin-left:auto;font-size:11px;background:#EEF2FF;color:#4F46E5;padding:3px 10px;border-radius:10px;font-weight:600">👑 Admin only</span>
+    </div>
+
+    <!-- Status -->
+    <div id="backup-status" style="padding:12px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;margin-bottom:14px;font-size:13px;color:#334155;line-height:1.6">
+      <span style="color:#94A3B8">กำลังโหลดสถานะ...</span>
+    </div>
+
+    <!-- Manual button -->
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="manualBackup()" style="background:#4F46E5">
+        💾 Backup เดี๋ยวนี้
+      </button>
+      <button class="btn btn-ghost" onclick="renderBackupPanel()">
+        🔄 รีเฟรช
+      </button>
+    </div>
+
+    <!-- Info box -->
+    <div style="padding:10px 14px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;font-size:11px;color:#1E3A8A;line-height:1.6;margin-bottom:14px">
+      💡 ระบบจะ Backup อัตโนมัติทุก <b>7 วัน</b> เมื่อ Admin login เข้ามา • เก็บ <b>4 ชุดล่าสุด</b> (ของเก่ากว่านั้นจะถูกลบ) • Restore จะสร้าง backup สำรองให้ก่อนทุกครั้ง
+    </div>
+
+    <!-- List -->
+    <div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:10px">📋 ประวัติ Backup</div>
+    <div id="backup-list">
+      <div style="padding:20px;text-align:center;color:#94A3B8;font-size:13px">กำลังโหลด...</div>
     </div>
   </div>
 </div>
@@ -2583,6 +2711,12 @@ function showPage(id,btn){
   } else if(id==='scan'){
     renderTodayScan();
     setTimeout(()=>document.getElementById('scan-serial').focus(),100);
+  } else if(id==='settings'){
+    renderAll();
+    // ── render Backup panel (admin only) ──
+    if(window._userRole === 'admin' && typeof renderBackupPanel === 'function'){
+      setTimeout(function(){ renderBackupPanel(); }, 100);
+    }
   } else {
     renderAll();
   }
@@ -3028,8 +3162,12 @@ window._startApp=function(){
       loadAllUsers().then(function(){
         var role = getUserRole(window._userEmail);
         applyUserRole(role);
-        // ถ้าเป็น admin → render users panel
-        if(role === 'admin') renderUsersPanel();
+        // ถ้าเป็น admin → render users panel + เช็ค auto backup
+        if(role === 'admin'){
+          renderUsersPanel();
+          // หน่วงนิดเดียวเพื่อให้ stock/log โหลดเสร็จก่อน
+          setTimeout(function(){ checkAutoBackup(); }, 2000);
+        }
         // ถ้ายังไม่ใช่ admin และยังไม่อยู่ใน DB → สร้าง record เป็น staff
         var key = sanitizeEmailKey(window._userEmail);
         if(!window._allUsers[key] && window._BOOTSTRAP_ADMINS.indexOf(window._userEmail.toLowerCase())<0){
@@ -3427,6 +3565,269 @@ function exportTrackerCSV(){
   a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download = 'SerialInStock_'+today()+'.csv';
   a.click();
+}
+
+// ══════════════════════════════════════════════════════════════
+// PHASE 4 — AUTO BACKUP SYSTEM
+// ══════════════════════════════════════════════════════════════
+window._BK_NODE         = 'prk_dif_backups';
+window._BK_META_NODE    = 'prk_dif_meta';
+window._BK_INTERVAL_DAYS = 7;     // backup ทุก 7 วัน
+window._BK_MAX_KEEP      = 4;     // เก็บ 4 ชุดล่าสุด (≈ 1 เดือน)
+
+// ── เช็คและ trigger backup อัตโนมัติ (เรียกหลัง admin login) ──
+function checkAutoBackup(){
+  if(!window._fb) return;
+  if(window._userRole !== 'admin') return; // เฉพาะ admin trigger auto
+
+  window._fb.get(window._fb.ref(window._fb.db, window._BK_META_NODE + '/lastBackup'))
+    .then(function(snap){
+      var last = snap.exists() ? Number(snap.val()) : 0;
+      var now = Date.now();
+      var daysSince = (now - last) / (1000 * 60 * 60 * 24);
+
+      if(daysSince >= window._BK_INTERVAL_DAYS){
+        console.log('[AutoBackup] Triggering — last:', daysSince.toFixed(1), 'days ago');
+        runBackup(true).then(function(){
+          toast('🤖 Auto-Backup สำเร็จ (รายสัปดาห์)', 'success');
+        }).catch(function(e){
+          console.error('[AutoBackup] Failed:', e);
+        });
+      } else {
+        console.log('[AutoBackup] Skip — last:', daysSince.toFixed(1), 'days ago (interval:', window._BK_INTERVAL_DAYS, ')');
+      }
+    }).catch(function(e){console.warn('[AutoBackup] check failed:', e);});
+}
+
+// ── ทำ backup จริง (manual หรือ auto) ──
+function runBackup(isAuto){
+  if(!window._fb) return Promise.reject(new Error('Firebase ไม่พร้อม'));
+
+  var stock = getStock();
+  var log   = getLog();
+  var ts    = Date.now();
+
+  // ตรวจสอบขนาด — เตือนถ้าใหญ่เกิน 4 MB
+  var payload = {
+    timestamp: ts,
+    date: new Date(ts).toISOString().replace('T',' ').slice(0,19),
+    stock: stock,
+    log: log,
+    stockCount: Object.keys(stock).length,
+    logCount: log.length,
+    createdBy: window._userEmail || 'unknown',
+    auto: !!isAuto
+  };
+
+  var sizeKB = Math.round(JSON.stringify(payload).length / 1024);
+  if(sizeKB > 4096){
+    return Promise.reject(new Error('ข้อมูลใหญ่เกิน 4 MB ('+sizeKB+' KB) — Firebase write limit'));
+  }
+
+  var bkRef = window._fb.ref(window._fb.db, window._BK_NODE + '/' + ts);
+  return window._fb.set(bkRef, payload).then(function(){
+    // อัปเดต lastBackup meta
+    var metaRef = window._fb.ref(window._fb.db, window._BK_META_NODE + '/lastBackup');
+    return window._fb.set(metaRef, ts);
+  }).then(function(){
+    return pruneOldBackups();
+  }).then(function(){
+    if(typeof renderBackupPanel === 'function') renderBackupPanel();
+  });
+}
+
+// ── ลบ backup เก่า เก็บแค่ MAX_KEEP ชุดล่าสุด ──
+function pruneOldBackups(){
+  if(!window._fb) return Promise.resolve();
+  return window._fb.get(window._fb.ref(window._fb.db, window._BK_NODE)).then(function(snap){
+    if(!snap.exists()) return;
+    var data = snap.val() || {};
+    var keys = Object.keys(data).sort(function(a,b){return Number(b)-Number(a);}); // ใหม่ → เก่า
+    if(keys.length <= window._BK_MAX_KEEP) return;
+    var toDelete = keys.slice(window._BK_MAX_KEEP);
+    console.log('[Backup] Pruning', toDelete.length, 'old backups');
+    return Promise.all(toDelete.map(function(k){
+      return window._fb.set(window._fb.ref(window._fb.db, window._BK_NODE + '/' + k), null);
+    }));
+  });
+}
+
+// ── แสดงสถานะและรายการ backup ──
+function renderBackupPanel(){
+  var listEl   = document.getElementById('backup-list');
+  var statusEl = document.getElementById('backup-status');
+  if(!listEl || !statusEl) return;
+  if(window._userRole !== 'admin') return;
+
+  if(!window._fb){
+    listEl.innerHTML = '<div style="color:var(--red2);padding:12px;font-size:13px">Firebase ไม่พร้อม</div>';
+    return;
+  }
+
+  // โหลด last backup time
+  window._fb.get(window._fb.ref(window._fb.db, window._BK_META_NODE + '/lastBackup'))
+    .then(function(snap){
+      var last = snap.exists() ? Number(snap.val()) : 0;
+      if(last === 0){
+        statusEl.innerHTML = '⚠️ <b>ยังไม่เคย Backup</b> — แนะนำให้กด <b>"💾 Backup เดี๋ยวนี้"</b>';
+        statusEl.style.background = '#FEF3C7';
+        statusEl.style.borderColor = '#FCD34D';
+        statusEl.style.color = '#92400E';
+      } else {
+        var daysSince = Math.floor((Date.now() - last) / (1000*60*60*24));
+        var hoursSince = Math.floor((Date.now() - last) / (1000*60*60));
+        var ago;
+        if(daysSince === 0){
+          ago = hoursSince <= 0 ? 'เพิ่งทำเมื่อกี้' : hoursSince + ' ชม.ก่อน';
+        } else {
+          ago = daysSince + ' วันก่อน';
+        }
+        var nextIn = window._BK_INTERVAL_DAYS - daysSince;
+        var lastDate = new Date(last).toLocaleString('th-TH', {dateStyle:'medium', timeStyle:'short'});
+        var nextText = nextIn <= 0
+          ? '<span style="color:#DC2626;font-weight:700">เกินกำหนด — จะ backup เมื่อ admin login</span>'
+          : 'อีก <b>' + nextIn + ' วัน</b>';
+        statusEl.innerHTML =
+          '⏱ <b>Backup ล่าสุด:</b> ' + lastDate + ' <span style="color:#64748B">(' + ago + ')</span><br>' +
+          '🔄 <b>ครั้งถัดไป:</b> ' + nextText;
+        statusEl.style.background = '#F0FDF4';
+        statusEl.style.borderColor = '#BBF7D0';
+        statusEl.style.color = '#166534';
+      }
+    });
+
+  // โหลด list
+  window._fb.get(window._fb.ref(window._fb.db, window._BK_NODE)).then(function(snap){
+    if(!snap.exists() || !snap.val()){
+      listEl.innerHTML = '<div style="padding:20px;text-align:center;color:#94A3B8;font-size:13px;background:#F8FAFC;border-radius:8px">ยังไม่มี Backup — กด "💾 Backup เดี๋ยวนี้" เพื่อเริ่ม</div>';
+      return;
+    }
+    var data = snap.val();
+    var keys = Object.keys(data).sort(function(a,b){return Number(b)-Number(a);}); // ใหม่สุดก่อน
+
+    listEl.innerHTML = keys.map(function(k){
+      var b = data[k];
+      if(!b) return '';
+      var dt = new Date(Number(b.timestamp || k)).toLocaleString('th-TH', {dateStyle:'medium', timeStyle:'short'});
+      var sizeKB = Math.round(JSON.stringify(b).length / 1024);
+      var tag = b.auto
+        ? '<span class="badge" style="background:#EEF2FF;color:#4F46E5;font-size:10px;padding:2px 6px">🤖 Auto</span>'
+        : '<span class="badge" style="background:#DCFCE7;color:#166534;font-size:10px;padding:2px 6px">👤 Manual</span>';
+      var by = (b.createdBy || '-').replace(/</g,'&lt;');
+      return '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;margin-bottom:6px;flex-wrap:wrap">'
+        + '<div style="flex:1;min-width:180px">'
+        +   '<div style="font-weight:600;font-size:13px;color:#0F172A;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+        +     '<span>' + dt + '</span>' + tag
+        +   '</div>'
+        +   '<div style="font-size:11px;color:#64748B;margin-top:3px">'
+        +     '📋 ' + (b.logCount||0) + ' LOG • 📦 ' + (b.stockCount||0) + ' SKU • 💾 ' + sizeKB + ' KB'
+        +   '</div>'
+        +   '<div style="font-size:10px;color:#94A3B8;margin-top:1px">โดย ' + by + '</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:4px;flex-shrink:0">'
+        +   '<button class="btn btn-ghost btn-xs" onclick="downloadBackup(' + k + ')" title="ดาวน์โหลดเป็น .json" style="padding:6px 10px">⬇️</button>'
+        +   '<button class="btn btn-ghost btn-xs" onclick="restoreBackup(' + k + ')" title="Restore ทับข้อมูลปัจจุบัน" style="padding:6px 10px;color:#D97706;border-color:rgba(217,119,6,.3)">↩️</button>'
+        +   '<button class="btn btn-ghost btn-xs" onclick="deleteBackup(' + k + ')" title="ลบ backup นี้" style="padding:6px 10px;color:#DC2626;border-color:rgba(220,38,38,.3)">🗑</button>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }).catch(function(e){
+    listEl.innerHTML = '<div style="color:#DC2626;padding:12px;font-size:13px">Error: '+(e.message||e)+'</div>';
+  });
+}
+
+// ── Manual backup (จากปุ่ม) ──
+function manualBackup(){
+  if(window._userRole === 'viewer'){
+    toast('⚠️ Viewer ไม่สามารถ Backup ได้','error');
+    return;
+  }
+  if(!confirm('💾 Backup ข้อมูลทั้งหมดตอนนี้?\n\nข้อมูล stock + log ปัจจุบันจะถูกเก็บไว้ใน Firebase')) return;
+
+  var btn = event && event.target ? event.target : null;
+  if(btn){btn.disabled = true; btn.textContent = '⏳ กำลัง Backup...';}
+
+  runBackup(false).then(function(){
+    toast('✅ Backup สำเร็จ','success');
+    if(btn){btn.disabled = false; btn.innerHTML = '💾 Backup เดี๋ยวนี้';}
+  }).catch(function(e){
+    toast('❌ Backup ล้มเหลว: '+(e.message||e),'error');
+    if(btn){btn.disabled = false; btn.innerHTML = '💾 Backup เดี๋ยวนี้';}
+  });
+}
+
+// ── ดาวน์โหลด backup เป็นไฟล์ .json ──
+function downloadBackup(ts){
+  if(!window._fb) return;
+  window._fb.get(window._fb.ref(window._fb.db, window._BK_NODE + '/' + ts)).then(function(snap){
+    if(!snap.exists()){toast('❌ ไม่พบ backup','error'); return;}
+    var b = snap.val();
+    var payload = {
+      v: 2,
+      date: b.date,
+      timestamp: b.timestamp,
+      stock: b.stock || {},
+      log: b.log || []
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    var safeDate = (b.date||'').replace(/[: ]/g,'-');
+    a.download = 'PRK_DIF_Backup_' + safeDate + '.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url);}, 1000);
+    toast('⬇️ ดาวน์โหลดสำเร็จ','success');
+  }).catch(function(e){
+    toast('❌ ดาวน์โหลดล้มเหลว: '+(e.message||e),'error');
+  });
+}
+
+// ── Restore backup (Replace ทับทั้งหมด) ──
+function restoreBackup(ts){
+  if(window._userRole !== 'admin'){
+    toast('⚠️ เฉพาะ Admin เท่านั้น','error');
+    return;
+  }
+  if(!confirm('↩️ Restore Backup นี้?\n\n⚠️ ข้อมูล stock + log ปัจจุบันจะถูก "แทนที่ทั้งหมด"\n\n✅ ระบบจะสร้าง backup สำรองให้อัตโนมัติก่อน Restore')) return;
+  if(!confirm('⚠️ ยืนยันอีกครั้ง — ดำเนินการ Restore?')) return;
+
+  toast('⏳ กำลังสร้าง backup สำรอง...','info');
+
+  // Step 1: สร้าง safety backup ก่อน
+  runBackup(false).then(function(){
+    toast('⏳ กำลัง Restore...','info');
+    // Step 2: โหลด backup ที่จะ restore
+    return window._fb.get(window._fb.ref(window._fb.db, window._BK_NODE + '/' + ts));
+  }).then(function(snap){
+    if(!snap.exists()) throw new Error('ไม่พบ backup');
+    var b = snap.val();
+    // Step 3: Replace stock + log
+    return Promise.all([
+      window._fb.set(window._fb.ref(window._fb.db, window._fb.SK), b.stock || {}),
+      window._fb.set(window._fb.ref(window._fb.db, window._fb.LK), b.log || [])
+    ]);
+  }).then(function(){
+    toast('✅ Restore สำเร็จ — กำลังโหลดข้อมูลใหม่...','success');
+    setTimeout(function(){location.reload();}, 1500);
+  }).catch(function(e){
+    toast('❌ Restore ล้มเหลว: '+(e.message||e),'error');
+  });
+}
+
+// ── ลบ backup ──
+function deleteBackup(ts){
+  if(window._userRole !== 'admin'){
+    toast('⚠️ เฉพาะ Admin เท่านั้น','error');
+    return;
+  }
+  if(!confirm('🗑 ลบ Backup นี้?\n\nการลบไม่สามารถกู้คืนได้')) return;
+  window._fb.set(window._fb.ref(window._fb.db, window._BK_NODE + '/' + ts), null).then(function(){
+    toast('🗑 ลบ Backup แล้ว','warn');
+    renderBackupPanel();
+  }).catch(function(e){
+    toast('❌ ลบไม่สำเร็จ: '+(e.message||e),'error');
+  });
 }
 
 </script></body>
