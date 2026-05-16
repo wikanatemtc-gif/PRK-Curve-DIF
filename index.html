@@ -338,6 +338,23 @@ tr:hover td{background:rgba(26,34,53,.5)}
 ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:5px;border:2px solid #F1F5F9}
 ::-webkit-scrollbar-thumb:hover{background:#94A3B8}
 
+
+/* Permission badges */
+.role-badge{font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:.04em;text-transform:uppercase;margin-left:8px}
+.role-admin{background:#7C3AED;color:#fff;box-shadow:0 2px 6px rgba(124,58,237,.3)}
+.role-staff{background:#0EA5E9;color:#fff;box-shadow:0 2px 6px rgba(14,165,233,.3)}
+.role-viewer{background:#64748B;color:#fff;box-shadow:0 2px 6px rgba(100,116,139,.3)}
+.hide-staff,.hide-viewer{display:none!important}
+body.role-admin .hide-admin{display:none!important}
+body.role-staff .hide-staff{display:none!important}
+body.role-viewer .hide-viewer{display:none!important}
+body.role-viewer button:not(.btn-allow-view),body.role-viewer .modal button:not(.btn-allow-view){opacity:.5;pointer-events:none}
+body.role-viewer .btn-ghost.no-print[onclick*="window.print"]{opacity:1;pointer-events:auto}
+.users-panel{background:#FFFFFF;border:1px solid #E2E8F0;border-radius:14px;padding:22px;box-shadow:0 1px 3px rgba(15,23,42,.04)}
+.user-row{display:flex;align-items:center;gap:12px;padding:12px;background:#F8FAFC;border-radius:10px;margin-bottom:8px;border:1px solid #E2E8F0}
+.user-row:hover{background:#F1F5F9}
+.user-email{font-weight:600;color:#1E293B;font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 </style>
 <script type="module">
 import {initializeApp} from"https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -393,7 +410,7 @@ onAuthStateChanged(window._fb.auth,user=>{
     <button class="tab" onclick="showPage('report',this)">📈 รายงาน</button>
     <button class="tab" onclick="showPage('settings',this)">⚙️ ตั้งค่า</button>
   </div>
-  <div style="font-size:11px;font-weight:800;color:#FFFFFF;background:#DC2626;padding:4px 12px;border-radius:20px;border:1px solid #FCA5A5;box-shadow:0 2px 6px rgba(220,38,38,.3);letter-spacing:.05em">DIF</div><div class="nav-right no-print"><span id="nav-user" style="color:#1E293B;font-weight:600;font-size:13px"></span><button class="btn btn-ghost btn-sm" onclick="doLogout()">ออกจากระบบ</button>
+  <div style="font-size:11px;font-weight:800;color:#FFFFFF;background:#DC2626;padding:4px 12px;border-radius:20px;border:1px solid #FCA5A5;box-shadow:0 2px 6px rgba(220,38,38,.3);letter-spacing:.05em">DIF</div><div class="nav-right no-print"><span id="nav-user" style="color:#1E293B;font-weight:600;font-size:13px"></span><span id="nav-role-badge" class="role-badge role-viewer">👁 VIEWER</span><button class="btn btn-ghost btn-sm" onclick="doLogout()">ออกจากระบบ</button>
     <div class="nav-clock" id="nav-clock"></div>
     <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ Print</button>
   </div>
@@ -891,7 +908,7 @@ onAuthStateChanged(window._fb.auth,user=>{
         <div class="alert a-orange">
           ⚠️ การล้างข้อมูลไม่สามารถกู้คืนได้ — Backup ก่อนทุกครั้ง
         </div>
-        <button class="btn btn-red" onclick="clearAllData()">🗑️ ล้างข้อมูลทั้งหมด</button>
+        <button class="btn btn-red hide-staff hide-viewer" onclick="clearAllData()">🗑️ ล้างข้อมูลทั้งหมด</button>
       </div>
     </div>
 
@@ -919,6 +936,56 @@ onAuthStateChanged(window._fb.auth,user=>{
           💡 ข้อมูลเก็บใน Browser LocalStorage — Backup ไว้ที่ไดร์เพื่อความปลอดภัย
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ USERS MANAGEMENT (Admin only) ═══════════ -->
+<div id="users-section" class="hide-staff hide-viewer" style="margin-top:20px">
+  <div class="users-panel">
+    <div class="card-title">
+      <span class="dot" style="background:#7C3AED"></span>
+      จัดการผู้ใช้และสิทธิ์
+      <span style="margin-left:auto;font-size:11px;background:#F3E8FF;color:#7C3AED;padding:3px 10px;border-radius:10px;font-weight:600">👑 Admin only</span>
+    </div>
+
+    <!-- เพิ่ม user ใหม่ -->
+    <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:10px">➕ เพิ่ม / แก้ไขสิทธิ์ผู้ใช้</div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end">
+        <div>
+          <label style="font-size:11px;color:#64748B;display:block;margin-bottom:4px">Email ผู้ใช้</label>
+          <input id="new-user-email" type="email" placeholder="user@example.com" style="font-size:13px;padding:8px 12px">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#64748B;display:block;margin-bottom:4px">ชื่อ (ไม่บังคับ)</label>
+          <input id="new-user-name" placeholder="ชื่อเล่น" style="font-size:13px;padding:8px 12px">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#64748B;display:block;margin-bottom:4px">สิทธิ์</label>
+          <select id="new-user-role" style="font-size:13px;padding:8px 12px">
+            <option value="staff">👤 Staff</option>
+            <option value="admin">👑 Admin</option>
+            <option value="viewer">👁 Viewer</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addNewUser()" style="height:38px">+ บันทึก</button>
+      </div>
+      <div style="font-size:11px;color:#94A3B8;margin-top:10px">
+        💡 ผู้ใช้ต้องสมัครบัญชี Firebase Auth ก่อน — ที่นี่กำหนดสิทธิ์การใช้งานในระบบเท่านั้น
+      </div>
+    </div>
+
+    <!-- รายการ users -->
+    <div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:10px">📋 ผู้ใช้ทั้งหมด</div>
+    <div id="users-list"></div>
+
+    <!-- ระดับสิทธิ์ -->
+    <div style="margin-top:16px;padding:14px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;font-size:12px;color:#1E3A8A;line-height:1.7">
+      <div style="font-weight:700;margin-bottom:6px">📖 ระดับสิทธิ์</div>
+      <div>👑 <strong>Admin</strong> — เข้าถึงทุกอย่าง รวมถึงจัดการผู้ใช้ ลบ LOG/SKU แก้สต็อกเริ่มต้น</div>
+      <div>👤 <strong>Staff</strong> — Scan, ดูข้อมูล, Export, แก้ Min Stock — ไม่สามารถลบหรือจัดการผู้ใช้</div>
+      <div>👁 <strong>Viewer</strong> — ดูข้อมูลอย่างเดียว ไม่สามารถบันทึกหรือแก้ไข</div>
     </div>
   </div>
 </div>
@@ -1880,7 +1947,7 @@ function renderStock(){
       <td>${stockBadge(p)}</td>
       <td class="no-print">
         <button class="btn btn-ghost btn-xs" onclick="openEditStock('${p}')">✏️ แก้ไข</button>
-        <button class="btn btn-ghost btn-xs" onclick="deleteSKU('${p}')" style="color:var(--red2);border-color:rgba(239,68,68,.3);margin-left:4px">🗑️</button>
+        <button class="btn btn-ghost btn-xs hide-staff hide-viewer" onclick="deleteSKU('${p}')" style="color:var(--red2);border-color:rgba(239,68,68,.3);margin-left:4px">🗑️</button>
       </td>
     </tr>`;
   });
@@ -2659,6 +2726,22 @@ window._startApp=function(){
     if(typeof renderAll==='function') renderAll();
     if(typeof updateClock==='function'){updateClock();setInterval(updateClock,30000);}
 
+    // ── โหลดและ apply user role ────────────────────────────────────
+    if(window._fb && window._fb.auth && window._fb.auth.currentUser){
+      window._userEmail = window._fb.auth.currentUser.email;
+      loadAllUsers().then(function(){
+        var role = getUserRole(window._userEmail);
+        applyUserRole(role);
+        // ถ้าเป็น admin → render users panel
+        if(role === 'admin') renderUsersPanel();
+        // ถ้ายังไม่ใช่ admin และยังไม่อยู่ใน DB → สร้าง record เป็น staff
+        var key = sanitizeEmailKey(window._userEmail);
+        if(!window._allUsers[key] && window._BOOTSTRAP_ADMINS.indexOf(window._userEmail.toLowerCase())<0){
+          saveUser(window._userEmail, 'staff');
+        }
+      });
+    }
+
     // set login branch label
     var brEl=document.getElementById('login-branch');
     if(brEl) brEl.textContent='สาขา DIF';
@@ -2679,6 +2762,138 @@ window._startApp=function(){
   }).catch(function(e){console.error('Firebase:',e);});
 };
 
+
+// ══════════════════════════════════════════════════════════════
+// PERMISSION SYSTEM
+// ══════════════════════════════════════════════════════════════
+window._userRole = null;
+window._userEmail = null;
+window._allUsers = {};
+
+// อีเมล admin เริ่มต้น (bootstrap) — เปลี่ยนได้ทีหลังผ่านหน้า Users
+window._BOOTSTRAP_ADMINS = ['wikanate.mtc@gmail.com'];
+
+function sanitizeEmailKey(em){
+  return (em||'').toLowerCase().replace(/[.#$/\[\]@]/g,'_');
+}
+
+function getUserRole(email){
+  if(!email) return 'viewer';
+  var em = email.toLowerCase();
+  var key = sanitizeEmailKey(em);
+  // Bootstrap admins
+  if(window._BOOTSTRAP_ADMINS.indexOf(em) >= 0) return 'admin';
+  // จาก database
+  if(window._allUsers && window._allUsers[key]) return window._allUsers[key].role || 'staff';
+  return 'staff'; // default ใหม่ = staff
+}
+
+function applyUserRole(role){
+  window._userRole = role;
+  document.body.classList.remove('role-admin','role-staff','role-viewer');
+  document.body.classList.add('role-'+role);
+  // อัปเดต badge ใน nav
+  var navBadge = document.getElementById('nav-role-badge');
+  if(navBadge){
+    var label = role==='admin' ? '👑 ADMIN' : role==='staff' ? '👤 STAFF' : '👁 VIEWER';
+    navBadge.className = 'role-badge role-' + role;
+    navBadge.textContent = label;
+  }
+}
+
+function loadAllUsers(){
+  if(!window._fb) return Promise.resolve({});
+  return window._fb.get(window._fb.ref(window._fb.db,'prk_users')).then(function(snap){
+    window._allUsers = snap.exists() ? snap.val() : {};
+    return window._allUsers;
+  }).catch(function(){return {};});
+}
+
+function saveUser(email, role, name){
+  if(!window._fb) return;
+  var key = sanitizeEmailKey(email);
+  var data = {email:email.toLowerCase(), role:role, name:name||'', updated:Date.now()};
+  return window._fb.set(window._fb.ref(window._fb.db,'prk_users/'+key), data);
+}
+
+function deleteUserRole(email){
+  if(!window._fb) return;
+  var key = sanitizeEmailKey(email);
+  return window._fb.set(window._fb.ref(window._fb.db,'prk_users/'+key), null);
+}
+
+function renderUsersPanel(){
+  if(window._userRole !== 'admin') return;
+  var el = document.getElementById('users-list');
+  if(!el) return;
+  loadAllUsers().then(function(users){
+    var keys = Object.keys(users);
+    // เพิ่ม bootstrap admin ที่ไม่ได้อยู่ใน DB
+    window._BOOTSTRAP_ADMINS.forEach(function(em){
+      var k = sanitizeEmailKey(em);
+      if(!users[k]) users[k] = {email:em, role:'admin', name:'(Bootstrap Admin)', bootstrap:true};
+    });
+    keys = Object.keys(users);
+    if(keys.length === 0){
+      el.innerHTML = '<div style="padding:20px;text-align:center;color:#94A3B8">ยังไม่มีผู้ใช้</div>';
+      return;
+    }
+    el.innerHTML = keys.map(function(k){
+      var u = users[k];
+      var roleColor = u.role==='admin'?'#7C3AED':u.role==='staff'?'#0EA5E9':'#64748B';
+      var roleLabel = u.role==='admin'?'👑 Admin':u.role==='staff'?'👤 Staff':'👁 Viewer';
+      var isMe = u.email && window._userEmail && u.email.toLowerCase() === window._userEmail.toLowerCase();
+      return '<div class="user-row">'
+        + '<div class="user-email">'+(u.email||k)+(isMe?' <span style="color:#059669;font-size:10px;font-weight:600">(คุณ)</span>':'')+(u.bootstrap?' <span style="color:#94A3B8;font-size:10px">(bootstrap)</span>':'')+'</div>'
+        + (u.name?'<div style="font-size:11px;color:#64748B">'+u.name+'</div>':'')
+        + '<select onchange="changeUserRole(\''+u.email+'\',this.value)" '+(u.bootstrap||isMe?'disabled':'')+' style="padding:6px 10px;border-radius:8px;border:1px solid #CBD5E1;background:#fff;font-size:12px;font-weight:600;color:'+roleColor+';min-width:110px">'
+        +   '<option value="admin" '+(u.role==='admin'?'selected':'')+'>👑 Admin</option>'
+        +   '<option value="staff" '+(u.role==='staff'?'selected':'')+'>👤 Staff</option>'
+        +   '<option value="viewer" '+(u.role==='viewer'?'selected':'')+'>👁 Viewer</option>'
+        + '</select>'
+        + '<button class="btn btn-ghost btn-xs" onclick="removeUserFromList(\''+u.email+'\')" '+(u.bootstrap||isMe?'disabled':'')+' style="color:#DC2626;border-color:rgba(220,38,38,.3)">🗑 ลบ</button>'
+        + '</div>';
+    }).join('');
+  });
+}
+
+function changeUserRole(email, role){
+  if(!email||!role) return;
+  if(!confirm('เปลี่ยนสิทธิ์ของ '+email+' เป็น '+role.toUpperCase()+'?')) {
+    renderUsersPanel();
+    return;
+  }
+  saveUser(email, role).then(function(){
+    toast('✅ อัปเดตสิทธิ์ '+email+' เป็น '+role,'success');
+    renderUsersPanel();
+  });
+}
+
+function removeUserFromList(email){
+  if(!confirm('ลบ '+email+' ออกจากระบบ?\n\nผู้ใช้จะถูกลบสิทธิ์ — แต่บัญชี Firebase Auth ยังคงอยู่')) return;
+  deleteUserRole(email).then(function(){
+    toast('🗑 ลบ '+email+' แล้ว','warn');
+    renderUsersPanel();
+  });
+}
+
+function addNewUser(){
+  var em = document.getElementById('new-user-email').value.trim().toLowerCase();
+  var role = document.getElementById('new-user-role').value;
+  var name = document.getElementById('new-user-name').value.trim();
+  if(!em || !em.match(/^[^@]+@[^@]+\.[^@]+$/)){
+    toast('⚠️ กรุณากรอกอีเมลให้ถูกต้อง','error');
+    return;
+  }
+  saveUser(em, role, name).then(function(){
+    toast('✅ เพิ่ม '+em+' เป็น '+role,'success');
+    document.getElementById('new-user-email').value='';
+    document.getElementById('new-user-name').value='';
+    renderUsersPanel();
+  });
+}
+
+
 function doLogin(){
   var em=document.getElementById('li-email').value.trim();
   var pw=document.getElementById('li-pass').value;
@@ -2694,7 +2909,11 @@ function doLogin(){
       err.style.display='block';btn.textContent='เข้าสู่ระบบ';btn.disabled=false;
     });
 }
-function doLogout(){if(confirm('ออกจากระบบ?'))window._fb.signOut(window._fb.auth);}
+function doLogout(){
+  window._userRole = null;
+  window._userEmail = null;
+  document.body.classList.remove('role-admin','role-staff','role-viewer');
+if(confirm('ออกจากระบบ?'))window._fb.signOut(window._fb.auth);}
 
 // ══════════════════════════════════════════════
 // SERIAL TRACKER
