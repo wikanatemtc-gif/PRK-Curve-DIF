@@ -1515,13 +1515,31 @@ function doSave(isAuto){
       setTimeout(function(){document.getElementById('scan-serial').focus();},100);
       return;
     } else {
+      // กรณี: นำออก serial ที่ไม่เคยรับเข้า — บล็อกเด็ดขาด ไม่ให้ override
+      if(_isOutType && _neverIn){
+        alert('🔴 ไม่สามารถนำออกได้!\n\nSerial: ' + serial + '\n\nSerial นี้ไม่เคยถูกนำเข้าสต็อก กรุณานำเข้าก่อน');
+        const _f = document.getElementById('scan-serial');
+        _f.style.borderColor='var(--red)';
+        _f.style.background='rgba(239,68,68,.1)';
+        setTimeout(function(){_f.style.borderColor='';_f.style.background='';},1500);
+        return;
+      }
+      // กรณี: นำออก serial ที่นำออกไปแล้ว — บล็อกเด็ดขาด
+      if(_isOutType && _alrOut){
+        alert('🔴 ไม่สามารถนำออกซ้ำได้!\n\nSerial: ' + serial + '\nนำออกครั้งสุดท้ายเมื่อ: ' + dupDate + '\n\nSerial นี้ถูกนำออกไปแล้ว');
+        const _f = document.getElementById('scan-serial');
+        _f.style.borderColor='var(--red)';
+        _f.style.background='rgba(239,68,68,.1)';
+        setTimeout(function(){_f.style.borderColor='';_f.style.background='';},1500);
+        return;
+      }
+      // กรณี: รับเข้า serial ที่ยังอยู่ในสต็อก — ให้ user เลือก
       const confirmed = confirm(
-        '⚠️ Serial นี้เคยบันทึกแล้ว!\n\n' +
+        '⚠️ Serial นี้ยังอยู่ในสต็อก!\n\n' +
         'Serial: ' + serial + '\n' +
-        'วันที่: ' + dupDate + '\n' +
-        'Product: ' + (dupLog.product||'') + '\n' +
-        'ประเภท: ' + (dupLog.type||'') + '\n\n' +
-        'ต้องการบันทึกซ้ำไหม?'
+        'รับเข้าเมื่อ: ' + dupDate + '\n' +
+        'Product: ' + (dupLog.product||'') + '\n\n' +
+        'ต้องการบันทึกรับเข้าซ้ำไหม? (ไม่แนะนำ)'
       );
       if(!confirmed) return;
     }
@@ -2099,6 +2117,27 @@ function saveManualLog(){
   if(!prod){alert('กรุณาเลือก Product');return;}
   const grp=(getStock()[prod]||{}).group||'';
   const serial=document.getElementById('ml-serial').value.trim();
+  const mlType=document.getElementById('ml-type').value;
+  const mlOut=parseInt(document.getElementById('ml-out').value)||0;
+
+  // ── ตรวจ Serial ก่อนบันทึก ─────────────────────────────────────
+  if(serial && mlOut>0){
+    var _mlIsOut = mlType==='นำออก'||mlType==='เคลม'||mlType==='ขาย'||mlType==='ฟรี'||mlType==='แลกเปลี่ยน';
+    if(_mlIsOut){
+      var _mlLogs = getLog().filter(function(l){return l.serial===serial;});
+      var _mlIn = _mlLogs.reduce(function(a,l){return a+(l.in||0);},0);
+      var _mlOutQ = _mlLogs.reduce(function(a,l){return a+(l.out||0);},0);
+      if(_mlIn === 0){
+        alert('🔴 ไม่สามารถนำออกได้!\n\nSerial: ' + serial + '\n\nSerial นี้ไม่เคยถูกนำเข้าสต็อก กรุณานำเข้าก่อน');
+        return;
+      }
+      if(_mlOutQ >= _mlIn){
+        alert('🔴 ไม่สามารถนำออกซ้ำได้!\n\nSerial: ' + serial + '\n\nSerial นี้ถูกนำออกไปแล้ว');
+        return;
+      }
+    }
+  }
+
   const d=serial?parseSerial(serial):null;
   const ml_docno=document.getElementById('ml-docno').value.trim();
   const entry={
@@ -2390,7 +2429,13 @@ function saveBatch(){
     if(_sBlock) dups.push(ser);
   }
   if(dups.length>0){
-    const ok = confirm('⚠️ พบ Serial ซ้ำ ' + dups.length + ' กล่อง:\n' + dups.slice(0,5).join('\n') + (dups.length>5?'\n...':'') + '\n\nดำเนินการต่อไหม? (จะบันทึกทับ)');
+    // ถ้าเป็น "นำออก" → บล็อกเด็ดขาด ไม่ให้ override
+    if(_bIsOut){
+      alert('🔴 ไม่สามารถนำออกได้!\n\nพบ Serial ที่ไม่เคยนำเข้าหรือนำออกไปแล้ว ' + dups.length + ' กล่อง:\n' + dups.slice(0,5).join('\n') + (dups.length>5?'\n...และอีก ' + (dups.length-5) + ' กล่อง':'') + '\n\nกรุณาตรวจสอบ Serial');
+      return;
+    }
+    // ถ้าเป็น "รับเข้า" → ให้ user เลือก
+    const ok = confirm('⚠️ พบ Serial ที่ยังอยู่ในสต็อก ' + dups.length + ' กล่อง:\n' + dups.slice(0,5).join('\n') + (dups.length>5?'\n...':'') + '\n\nดำเนินการต่อไหม? (จะบันทึกซ้ำ ไม่แนะนำ)');
     if(!ok) return;
   }
 
